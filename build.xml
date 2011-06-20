@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ====================================================================== 
+     Jul 8, 2010 8:09:51 AM                                                        
+
+     Cisco History    
+     Grifters game notes and design.
+                   
+     ameneely                                                                
+     ====================================================================== -->
+<project name="Grifters" default="default">
+	<description>
+            Grifters game notes and design.
+    </description>
+
+	<property file="build.properties" />
+
+	<property name="doc.dir" value="${basedir}/game" />
+	<property name="pub.dropbox.dir" value="d:/apmeneel/Dropbox/Dropbox" />
+
+	<path id="wikitext.classpath">
+		<fileset dir="${wikitext.standalone}">
+			<include name="org.eclipse.mylyn.wikitext.*core*.jar" />
+		</fileset>
+	</path>
+
+	<taskdef classpathref="wikitext.classpath" resource="org/eclipse/mylyn/wikitext/core/util/anttask/tasks.properties" />
+
+
+	<!-- ================================= 
+          target: default              
+         ================================= -->
+	<target name="default" depends="wikidoc, dropbox" description="Grifters game notes and design.">
+
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - - 
+          target: Rebuild the wiki doc                      
+         - - - - - - - - - - - - - - - - - -->
+	<target name="wikidoc" depends="clean">
+		<wikitext-to-html markupLanguage="Confluence" overwrite="true" failonvalidationerror="true" useinlinecssstyles="false">
+			<fileset dir="${doc.dir}">
+				<include name="*.confluence" />
+			</fileset>
+			<stylesheet url="main.css" />
+		</wikitext-to-html>
+	</target>
+
+	<target name="clean">
+		<delete>
+			<fileset dir="${doc.dir}">
+				<include name="*.html" />
+				<exclude name="*.confluence" />
+			</fileset>
+		</delete>
+	</target>
+
+	<target name="dropbox">
+		<copy todir="${pub.dropbox.dir}">
+			<fileset dir="${doc.dir}">
+				<include name="*.html" />
+				<exclude name="*.confluence" />
+			</fileset>
+		</copy>
+	</target>
+
+
+</project>
