@@ -1,0 +1,2 @@
+#If this property is not set, it defaults to $HOME/.gimp-2.6/scripts
+#publish.dir=c:/Users/apmeneel/.gimp-2.6/scripts
