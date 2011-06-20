@@ -85,150 +85,62 @@
 
 
 (define (script-fu-chaoticbits-border-shadow img
-				  drawable
+				  origlayer
 				  color
 				  width
-				  iteration
-				  merge)
+				  iterations)
   (gimp-image-undo-group-start img)
-  (let* ((origfgcolor (car (gimp-palette-get-foreground)))
-	 (origselection (car (gimp-selection-save img)))
-	 (drwwidth (car (gimp-drawable-width drawable)))
-	 (drwheight (car (gimp-drawable-height drawable)))
-	 (drwoffsets (gimp-drawable-offsets drawable))
-	 (layername (car (gimp-drawable-get-name drawable)))
-	 (strokelayer 0)
-	 (drwoffsets (gimp-drawable-offsets drawable))
-	 (alphaselection 0)
-	 (outerselection 0)
-	 (innerselection 0)
-	 (origmask 0)
-	 (alphamask 0)
-	 (outerwidth 0)
-	 (innerwidth 0)
-	 (growamt 0)
-	)
-    (if (= position 0)
-      (begin
-	(set! strokelayer (car (gimp-layer-new img drwwidth drwheight (cond ((= (car (gimp-image-base-type img)) 0) 1) ((= (car (gimp-image-base-type img)) 1) 3)) (string-append layername "-stroke") opacity (get-blending-mode mode))))
-	(add-over-layer img strokelayer drawable)
-	(gimp-layer-set-offsets strokelayer (car drwoffsets) (cadr drwoffsets))
-	(gimp-selection-all img)
-	(gimp-edit-clear strokelayer)
-	(gimp-selection-none img)
-	(gimp-selection-layer-alpha drawable)
-	(if (> (car (gimp-layer-get-mask drawable)) -1)
-	  (gimp-selection-combine (car (gimp-layer-get-mask drawable)) 3)
-	)
-	(set! alphaselection (car (gimp-selection-save img)))
-	(gimp-selection-shrink img size)
-	(set! innerselection (car (gimp-selection-save img)))
-	(if (= merge 1)
-	  (begin
-	    (set! origmask (car (gimp-layer-get-mask drawable)))
-	    (if (> origmask -1)
-	      (begin
-		(set! origmask (car (gimp-channel-copy origmask)))
-		(gimp-layer-remove-mask drawable 1)
-	      )
+   
+  ;TODO Make sure they have an active layer first
+  
+  
+  ;Back up original stuff going in
+  (let* (
+	  	 (origfgcolor (car (gimp-palette-get-foreground)))
+		 (origselection (car (gimp-selection-save img)))
+		 (layername (car (gimp-drawable-get-name origlayer)))
+		 (imgheight (car (gimp-drawable-height origlayer)))
+		 (imgwidth (car (gimp-drawable-width origlayer)))	
+  		 (newlayer (car (gimp-layer-new img imgwidth imgheight (cond ((= (car (gimp-image-base-type img)) 0) 1) ((= (car (gimp-image-base-type img)) 1) 3)) (string-append layername " border shadow") 100 0)))
+  		 (blurperiter (/ width iterations))
+  		 (blur_width width)
+  		 (blur_iter 1)
 	    )
-	    (set! alphamask (car (gimp-layer-create-mask drawable 3)))
-	    (gimp-selection-none img)
-	    (gimp-threshold alphaselection 1 255)
-	    (gimp-selection-load alphaselection)
-	    (gimp-selection-combine innerselection 1)
-	    (gimp-palette-set-foreground color)
-	    (gimp-edit-fill strokelayer 0)
-	    (set! strokelayer (car (gimp-image-merge-down img strokelayer 0)))
-	    (gimp-drawable-set-name strokelayer layername)
-	    (gimp-layer-add-mask strokelayer alphamask)
-	    (gimp-layer-remove-mask strokelayer 0)
-	    (if (> origmask -1)
-	      (gimp-layer-add-mask strokelayer origmask)
-	    )
-	  )
-	  (begin
-	    (gimp-selection-load alphaselection)
-	    (gimp-selection-combine innerselection 1)
-	    (gimp-palette-set-foreground color)
-	    (gimp-edit-fill strokelayer 0)
-	  )
-	)
-      )
-      (if (= position 100)
-	(begin
-	  (set! growamt (math-round (* size 1.2)))
-	  (set! strokelayer (car (gimp-layer-new img (+ drwwidth (* growamt 2)) (+ drwheight (* growamt 2)) (cond ((= (car (gimp-image-base-type img)) 0) 1) ((= (car (gimp-image-base-type img)) 1) 3)) (string-append layername "-stroke") opacity (get-blending-mode mode))))
-	  (add-under-layer img strokelayer drawable)
-	  (gimp-layer-set-offsets strokelayer (- (car drwoffsets) growamt) (- (cadr drwoffsets) growamt))
-	  (gimp-selection-all img)
-	  (gimp-edit-clear strokelayer)
-	  (gimp-selection-none img)
-	  (gimp-selection-layer-alpha drawable)
-	  (if (> (car (gimp-layer-get-mask drawable)) -1)
-	    (gimp-selection-combine (car (gimp-layer-get-mask drawable)) 3)
-	  )
-	  (set! alphaselection (car (gimp-selection-save img)))
-	  (set! innerselection (car (gimp-selection-save img)))
-	  (gimp-selection-none img)
-	  (gimp-threshold innerselection 255 255)
-	  (gimp-selection-load alphaselection)
-	  (gimp-selection-grow img size)
-	  (gimp-selection-combine innerselection 1)
-	  (gimp-palette-set-foreground color)
-	  (gimp-edit-fill strokelayer 0)
-	  (if (= merge 1)
-	    (begin
-	      (set! origmask (car (gimp-layer-get-mask drawable)))
-	      (if (> origmask -1)
-		(gimp-layer-remove-mask drawable 0)
-	      )
-	      (set! strokelayer (car (gimp-image-merge-down img drawable 0)))
-	      (gimp-drawable-set-name strokelayer layername)
-	    )
-	  )
-	)
-	(begin
-	  (set! outerwidth (math-round (* (/ position 100) size)))
-	  (set! innerwidth (- size outerwidth))
-	  (set! growamt (math-round (* outerwidth 1.2)))
-	  (set! strokelayer (car (gimp-layer-new img (+ drwwidth (* growamt 2)) (+ drwheight (* growamt 2)) (cond ((= (car (gimp-image-base-type img)) 0) 1) ((= (car (gimp-image-base-type img)) 1) 3)) (string-append layername "-stroke") opacity (get-blending-mode mode))))
-	  (add-over-layer img strokelayer drawable)
-	  (gimp-layer-set-offsets strokelayer (- (car drwoffsets) growamt) (- (cadr drwoffsets) growamt))
-	  (gimp-selection-all img)
-	  (gimp-edit-clear strokelayer)
-	  (gimp-selection-none img)
-	  (gimp-selection-layer-alpha drawable)
-	  (if (> (car (gimp-layer-get-mask drawable)) -1)
-	    (gimp-selection-combine (car (gimp-layer-get-mask drawable)) 3)
-	  )
-	  (set! alphaselection (car (gimp-selection-save img)))
-	  (gimp-selection-shrink img innerwidth)
-	  (set! innerselection (car (gimp-selection-save img)))
-	  (gimp-selection-load alphaselection)
-	  (gimp-selection-grow img outerwidth)
-	  (gimp-selection-combine innerselection 1)
-	  (gimp-palette-set-foreground color)
-	  (gimp-edit-fill strokelayer 0)
-	  (if (= merge 1)
-	    (begin
-	      (set! origmask (car (gimp-layer-get-mask drawable)))
-	      (if (> origmask -1)
-		(gimp-layer-remove-mask drawable 0)
-	      )
-	      (set! strokelayer (car (gimp-image-merge-down img strokelayer 0)))
-	      (gimp-drawable-set-name strokelayer layername)
-	    )
-	  )
-	)
-      )
-    )
-    (gimp-palette-set-foreground origfgcolor)
-    (gimp-selection-load origselection)
-    (gimp-image-remove-channel img alphaselection)
-    (gimp-image-remove-channel img innerselection)
-    (gimp-image-remove-channel img origselection)
+		;Add the new layer above the current
+  		(gimp-image-add-layer img newlayer -1) 
+
+		;Set color
+  		(gimp-palette-set-foreground color) 
+
+		;Loop over the iterations
+		(while (< blur_iter (+ iterations 1)) 
+			;Select from original layer
+	  		(gimp-selection-layer-alpha origlayer) 
+	  		(gimp-selection-invert img)
+	  
+			;Fill inverted layer
+			(gimp-edit-bucket-fill newlayer FG-BUCKET-FILL NORMAL-MODE 100 255 FALSE 0 0)
+	  
+			;Blur
+			(gimp-selection-none img) 
+	 		(plug-in-gauss-rle2 1 img newlayer blur_width blur_width) 
+	 		
+	 		;Iterate
+	 		(set! blur_iter (+ blur_iter 1))
+	 		(set! blur_width (* blurperiter blur_iter ))
+		)  		
+ 
+ 		;Delete from original layer
+		(gimp-selection-layer-alpha origlayer)
+		(gimp-selection-invert img)
+		(gimp-edit-clear newlayer)
+		
+		;Restore original settings
+		(gimp-palette-set-foreground origfgcolor)
+		(gimp-selection-load origselection)
+		(gimp-image-set-active-layer img origlayer)
   )
+    
   (gimp-displays-flush)
   (gimp-image-undo-group-end img)
 )
@@ -246,4 +158,4 @@
 		    SF-COLOR		_"Color"		'(0 0 0)
 		    SF-ADJUSTMENT	"Width"		'(100 0 500 1 10 0 0)
 		    SF-ADJUSTMENT	"Blur Iterations"	'(4 1 10 1 1 0 0)	
-		    SF-TOGGLE		"Merge with layer"	FALSE)
+)
